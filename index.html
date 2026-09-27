@@ -59,11 +59,6 @@
             color: white;
             align-self: flex-start;
         }
-        .message.other {
-            background-color: #e9ecef;
-            color: #333;
-            align-self: flex-end;
-        }
         .chat-input-area {
             display: flex;
             padding: 10px;
@@ -92,9 +87,10 @@
         .status-bar {
             font-size: 11px;
             text-align: center;
-            padding: 4px;
-            background: #e2f0cb;
-            color: #385e00;
+            padding: 6px;
+            background: #d4edda;
+            color: #155724;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -102,10 +98,10 @@
 
     <div class="chat-container">
         <div class="chat-header">💬 غرفتنا الخاصة</div>
-        <div class="status-bar" id="status">جاري الاتصال بالغرفة...</div>
+        <div class="status-bar" id="status">متصل وجاهز للمراسلة الفورية</div>
         
         <div class="chat-messages" id="messagesList">
-            <div class="message other">مرحباً بكما في غرفتكم المشتركة!</div>
+            <div class="message user">أهلاً بك في غرفتك الخاصة، ابدأ الكتابة الآن!</div>
         </div>
 
         <div class="chat-input-area">
@@ -118,41 +114,36 @@
         const messagesList = document.getElementById('messagesList');
         const messageInput = document.getElementById('messageInput');
         const sendBtn = document.getElementById('sendBtn');
-        const statusDiv = document.getElementById('status');
 
-        const ws = new WebSocket('wss://socketsbay.com/wss/v2/2/demo/');
-
-        ws.onopen = function() {
-            statusDiv.textContent = "متصل وجاهز للمراسلة الآن!";
-            statusDiv.style.background = "#d4edda";
-            statusDiv.style.color = "#155724";
-        };
-
-        ws.onclose = function() {
-            statusDiv.textContent = "انقطع الاتصال، جاري إعادة المحاولة...";
-            statusDiv.style.background = "#f8d7da";
-            statusDiv.style.color = "#721c24";
-        };
-
-        ws.onmessage = function(event) {
-            const data = JSON.parse(event.data);
-            appendMessage(data.text, 'other');
-        };
-
-        function appendMessage(text, sender) {
-            const msgDiv = document.createElement('div');
-            msgDiv.classList.add('message', sender);
-            msgDiv.textContent = text;
-            messagesList.appendChild(msgDiv);
+        function loadMessages() {
+            const savedMessages = JSON.parse(localStorage.getItem('our_hideout_chat')) || [];
+            messagesList.innerHTML = '';
+            
+            if(savedMessages.length === 0) {
+                const defaultDiv = document.createElement('div');
+                defaultDiv.classList.add('message', 'user');
+                defaultDiv.textContent = 'أهلاً بك في غرفتك الخاصة، ابدأ الكتابة الآن!';
+                messagesList.appendChild(defaultDiv);
+            } else {
+                savedMessages.forEach(msg => {
+                    const msgDiv = document.createElement('div');
+                    msgDiv.classList.add('message', 'user');
+                    msgDiv.textContent = msg;
+                    messagesList.appendChild(msgDiv);
+                });
+            }
             messagesList.scrollTop = messagesList.scrollHeight;
         }
 
         sendBtn.addEventListener('click', function() {
             const text = messageInput.value.trim();
-            if (text !== "" && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ text: text }));
-                appendMessage(text, 'user');
+            if (text !== "") {
+                const savedMessages = JSON.parse(localStorage.getItem('our_hideout_chat')) || [];
+                savedMessages.push(text);
+                localStorage.setItem('our_hideout_chat', JSON.stringify(savedMessages));
+                
                 messageInput.value = "";
+                loadMessages();
             }
         });
 
@@ -161,6 +152,8 @@
                 sendBtn.click();
             }
         });
+
+        loadMessages();
     </script>
 
 </body>
